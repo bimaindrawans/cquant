@@ -33,7 +33,7 @@ class FeatureUnion:
         # pct change of close price
         ret = df_tech['c'].pct_change().fillna(0.0).values
         # ATR (already in df_tech)
-        atr = df_tech['atr'].fillna(method='ffill').fillna(0.0).values
+        atr = df_tech['atr'].ffill().fillna(0.0).values
         return np.column_stack([ret, atr])
 
     def fit(self, df: pd.DataFrame):
