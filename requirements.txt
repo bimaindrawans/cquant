@@ -1,0 +1,10 @@
+pandas
+numpy
+ta
+requests
+python-binance
+lightgbm
+hmmlearn
+apscheduler
+python-dotenv
+pyarrow
