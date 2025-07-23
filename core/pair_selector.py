@@ -2,7 +2,7 @@
 
 from collections import defaultdict
 import math, random
-from io.binance_client import client  # kita bisa pakai ccxt/python-binance
+from cqio.binance_client import client  # kita bisa pakai ccxt/python-binance
 
 class DynamicUCBSelector:
     def __init__(self, k: int, static_pairs: list[str], universe_size: int):
