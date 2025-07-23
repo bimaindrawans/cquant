@@ -123,7 +123,7 @@ class VectorBacktester:
                 risk_amount = balance * size_frac
                 qty = risk_amount / stop_dist
 
-                position = {
+        position = {
                     'side':        decision['side'],
                     'entry_price': row['c'],
                     'qty':         qty,
@@ -132,5 +132,72 @@ class VectorBacktester:
                     'entry_idx':   i
                 }
 
+        # Close any open position at the final bar
+        if position is not None:
+            last_row = self.df.iloc[-1]
+            exit_price = last_row['c']
+            pnl = (
+                (exit_price - position['entry_price'])
+                * position['qty']
+                * (1 if position['side'] == 'long' else -1)
+            )
+            balance += pnl
+            trade_log.append({
+                'entry_time':  self.df.loc[position['entry_idx'], :].name,
+                'exit_time':   last_row.name,
+                'side':        position['side'],
+                'entry_price': position['entry_price'],
+                'exit_price':  exit_price,
+                'qty':         position['qty'],
+                'pnl':         pnl,
+                'balance_after': balance,
+            })
+
         trades_df = pd.DataFrame(trade_log)
         return trades_df, balance
+    
+def run_backtest(symbol: str, hist: str = "60 days ago UTC") -> None:
+    """Convenience helper to quickly backtest a single symbol.
+
+    Parameters
+    ----------
+    symbol : str
+        Trading pair, e.g. ``"BTCUSDT"``.
+    hist : str, optional
+        How far back to fetch historical klines (default ``"60 days ago UTC"``).
+    """
+    from cqio.binance_client import fetch_klines
+    from features.feature_union import FeatureUnion
+    from models.policy import PolicyModel
+    from config import LIGHTGBM_PARAMS, INTERVAL
+    from .metrics import summary
+
+    # 1. fetch candles
+    df = fetch_klines(symbol, INTERVAL, start_str=hist)
+    df = df.rename(columns={c: c.lower() for c in df.columns})
+
+    # 2. compute features & labels
+    fu = FeatureUnion(n_states=3)
+    feats = fu.fit_transform(df)
+    ret_next = df["c"].pct_change().shift(-1)
+    feats["ret_next"] = ret_next.reindex(feats.index)
+    feats = feats.dropna(subset=["ret_next"])
+    feats["label"] = 0
+    feats.loc[feats["ret_next"] > 0, "label"] = 1
+    feats.loc[feats["ret_next"] < 0, "label"] = 2
+
+    state_cols = [c for c in feats.columns if c.startswith("state_")]
+    feat_cols = [c for c in feats.columns if c not in state_cols + ["ret_next", "label"]]
+
+    # 3. train model on the same history (demo purpose)
+    X = feats[feat_cols + state_cols].values
+    y = feats["label"].values
+    policy = PolicyModel(LIGHTGBM_PARAMS)
+    policy.train(X, y)
+
+    # 4. run backtest
+    bt = VectorBacktester(feats, feat_cols, state_cols, policy)
+    trades, bal = bt.run()
+    print(trades.tail())
+    print("Final balance", bal)
+    print(summary(trades))
