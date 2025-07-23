@@ -13,7 +13,7 @@ def add_atr(df: pd.DataFrame, period: int = 14) -> pd.DataFrame:
         high=df['h'],
         low=df['l'],
         close=df['c'],
-        length=period
+        window=period
     )
     return df
 
@@ -25,7 +25,7 @@ def add_rsi(df: pd.DataFrame, period: int = 14) -> pd.DataFrame:
     df = df.copy()
     df['rsi'] = ta.momentum.rsi(
         close=df['c'],
-        length=period
+        window=period
     )
     return df
 
