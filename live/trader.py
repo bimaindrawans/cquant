@@ -16,12 +16,12 @@ from config import (
 from core.scheduler import Scheduler
 from core.cache_manager import TempCache
 from core.pair_selector import DynamicUCBSelector
-from io.binance_client import (
+from cqio.binance_client import (
     fetch_klines,
     get_account_balance,
     place_market_order
 )
-from io.sentiment import aggregate_sentiment
+from cqio.sentiment import aggregate_sentiment
 from features.feature_union import FeatureUnion
 from models.policy import PolicyModel
 from models.online_update import OnlineUpdater
