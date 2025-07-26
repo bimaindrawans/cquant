@@ -25,16 +25,31 @@ class FeatureUnion:
         self._is_fitted = False
 
     def _prepare_hmm_input(self, df_tech: pd.DataFrame) -> np.ndarray:
+        """Build the observation matrix for HMM.
+
+        Included features:
+          - returns (% change of close)
+          - ATR
+          - Bollinger Band width
+          - MACD difference
+          - OBV change
+          - intraday volatility
         """
-        Build the observation matrix for HMM:
-          - returns (%) as first column
-          - ATR as second column
-        """
-        # pct change of close price
         ret = df_tech['c'].pct_change().fillna(0.0).values
-        # ATR (already in df_tech)
         atr = df_tech['atr'].ffill().fillna(0.0).values
-        return np.column_stack([ret, atr])
+        bb_width = df_tech['bb_width'].ffill().fillna(0.0).values
+        macd_diff = df_tech['macd_diff'].fillna(0.0).values
+        obv_change = df_tech['obv'].pct_change().fillna(0.0).values
+        intraday_vol = df_tech['intraday_vol'].fillna(0.0).values
+
+        return np.column_stack([
+            ret,
+            atr,
+            bb_width,
+            macd_diff,
+            obv_change,
+            intraday_vol,
+        ])
 
     def fit(self, df: pd.DataFrame):
         """
@@ -55,7 +70,8 @@ class FeatureUnion:
         Apply the technical feature pipeline and HMM filter to new data.
         Returns a DataFrame with:
           - original OHLCV columns
-          - 'atr', 'rsi', 'stoch_k', 'stoch_d'
+          - 'atr', 'rsi', 'stoch_k', 'stoch_d',
+            'bb_width', 'macd_diff', 'obv', 'intraday_vol'
           - 'state_0', ..., 'state_{n_states-1}' probabilities
         """
         if not self._is_fitted:
