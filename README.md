@@ -1,7 +1,6 @@
 # CQuant
 
-CQuant is a research project for developing algorithmic cryptocurrency trading strategies. It combines Hidden Markov Models (HMM), traditional machine learning, stochastic processes and sentiment analysis techniques.
-
+CQuant is a research project for developing algorithmic cryptocurrency trading strategies. It combines Markov-Switching GARCH models, traditional machine learning, stochastic processes and sentiment analysis techniques.
 ## Installation
 
 ```bash
